@@ -6,7 +6,7 @@
       <router-link tag="div" class="tab-item"  to='/ratings'>评价</router-link>
       <router-link tag="div" class="tab-item"  to='/seller'>商家</router-link>
     </div>
-    <router-view></router-view>
+    <router-view :seller='seller'></router-view>
   </div>
 </template>
 
@@ -34,6 +34,7 @@ export default {
       if (res.succ && res.data) {
         const data = res.data
         this.seller = data
+        console.log(data)
       }
     }
   },

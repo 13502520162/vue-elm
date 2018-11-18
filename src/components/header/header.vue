@@ -19,12 +19,12 @@
       </div>
       <div v-if='seller.supports' @click="showDetail" class="support-count">
           <span class="count">{{seller.supports.length}}个</span>
-          <i class="icon-keyboard_arrow_right"></i>
+          <span class="icon-keyboard_arrow_right"></span>
       </div>
     </div>
     <div class="bulletin-wrapper"  @click="showDetail" >
       <span class="bulletin-title"></span><span class="bulletin-text">{{seller.bulletin}}</span>
-      <i class="icon-keyboard_arrow_right"></i>
+      <span class="icon-keyboard_arrow_right"></span>
     </div>
     <div class="background">
       <img :src="seller.avatar" width="100%" height="100%" alt="">
@@ -96,9 +96,9 @@ export default {
 }
 </script>
 <style lang='stylus' scoped>
+  @import '../../common/stylus/icon.css'
   @import '../../common/stylus/mixin'
   @import '../../common/stylus/base'
-  @import "../../common/stylus/icon.css"
   .fade-enter-active, .fade-leave-active
     transition: opacity .5s
   .fade-enter, .fade-leave-to
@@ -177,6 +177,7 @@ export default {
           font-size 10px
         .icon-keyboard_arrow_right
           font-size 10px
+          vertical-align sub
     .bulletin-wrapper
       position relative
       height 28px
@@ -202,7 +203,7 @@ export default {
       .icon-keyboard_arrow_right
         position absolute
         font-size 10px
-        right 12px
+        right 8px
         top 8px
     .background
       position absolute
