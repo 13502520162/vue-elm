@@ -1,6 +1,6 @@
 <template>
   <div class="shopcart">
-    <div class="content">
+    <div class="content" @click='toggleList'>
       <div class="content-left">
         <div class="logo-wrapper">
           <div class="logo" :class="{'highligh':totalCount>0}">
@@ -16,16 +16,40 @@
       </div>
     </div>
     <div class="ball-container">
-        <transition-group name='drop'  v-on:before-enter="beforeEnter" v-on:enter="enter" v-on:after-enter="afterEnter">
-          <div class="ball" v-for="(ball,index) of balls" :key='index' v-show="ball.show">
-            <div class="inner inner-hook"></div>
-          </div>
-        </transition-group>
+       <div v-for="(ball,index) in balls" :key='index'>
+            <transition name="drop" @before-enter="beforeDrop" @enter="dropping" @after-enter="afterDrop">
+                <div class="ball" v-show="ball.show">
+                    <div class="inner inner-hook"></div>
+                </div>
+            </transition>
+        </div>
     </div>
+    <transition name='fold'>
+      <div class="showcart-list" v-show='listShow'>
+        <div class="list-header">
+          <h1 class="title">购物车</h1>
+          <span class="empty">清空</span>
+        </div>
+        <div class="list-content">
+          <ul>
+            <li class="food" v-for='(food,index) of selectFoods' :key='index'>
+              <span class="name">{{food.name}}</span>
+              <div class="price">
+                <span>￥{{food.price*food.count}}</span>
+              </div>
+              <div class="cortcontrol-wrapper">
+                <cortcontrol :food="food"></cortcontrol>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script>
+import cortcontrol from 'components/cortcontrol/cortcontrol'
 export default {
   name: 'default',
   props: {
@@ -43,6 +67,9 @@ export default {
       type: Number,
       default: 0
     }
+  },
+  components: {
+    cortcontrol
   },
   computed: {
     totalPrice () {
@@ -75,55 +102,15 @@ export default {
       } else {
           return 'enough'
       }
-    }
-  },
-  methods: {
-    drop (el) {
-      for (let i = 0; i < this.balls.length; i++) {
-       let ball = this.balls[i]
-       if (!ball.show) {
-         ball.show = true
-         ball.el = el
-         this.dropBalls.push(ball)
-         return
-       }
-      }
     },
-    beforeEnter: function (el) {
-      let count = this.balls.length
-      while (count--) {
-        let ball = this.ball[count]
-        if (ball.show) {
-          let rect = ball.el.getBoundingClientRect()
-          let x = rect.left - 32
-          let y = -(window.innerHeight - rect.top - 22)
-      
-          el.style.display = ''
-          el.style.webkitTrransform = `translate3d(0,${y}px,0)`
-          el.style.transform = `translate3d(0,${y}px,0)`
-          let inner = el.getELementsByClassName('inner-hook')[0]
-          inner.style.webkitTrransform = `translate3d(${x}px,0,0)`
-          inner.style.transform = `translate3d(${x}px,0,0)`
-        }
+    listShow () {
+      if (!this.totalCount) {
+        return false
       }
-    },
-    enter: function (el) {
-      /* eslint-disable no-unused-vars */
-      let rf = el.offestHeight
-      this.$nextTick(() => {
-        el.style.webkitTrransform = 'translate3d(0,0,0)'
-        el.style.transform = 'translate3d(0,0,0)'
-        let inner = el.getELementsByClassName('inner-hook')[0]
-        inner.style.webkitTrransform = 'translate3d(0,0,0)'
-        inner.style.transform = 'translate3d(0,0,0)'
-      })
-    },
-    afterEnter: function (el) {
-      let ball = this.dropBalls.shift()
-      if (ball) {
-        ball.show = false
-        el.style.display = 'none'
+      if (this.totalCount > 0 && !this.fold) {
+        return true
       }
+      return false
     }
   },
   data () {
@@ -137,22 +124,80 @@ export default {
         },
         {
           show: false
-        },
-        {
-          show: false
-        },
-        {
-          show: false
         }
       ],
-      dropBalls: []
+      dropBalls: [],
+      fold: true
+    }
+  },
+  methods: {
+    additem (event) {
+      this.drop(event.target)
+      this.count++
+    },
+    toggleList () {
+      if (!this.totalCount) {
+        return
+      }
+      this.fold = !this.fold
+    },
+    drop (el) {
+      for (let i = 0; i < this.balls.length; i++) {
+       let ball = this.balls[i]
+       if (!ball.show) {
+         ball.show = true
+         ball.el = el
+         this.dropBalls.push(ball)
+         return
+       }
+      }
+    },
+    beforeDrop (el) { // 购物车小球动画实现
+      let count = this.balls.length
+      while (count--) {
+          let ball = this.balls[count]
+          if (ball.show) {
+            let rect = ball.el.getBoundingClientRect() // 元素相对于视口的位置
+            let x = rect.left - 32
+            let y = -(window.innerHeight - rect.top - 22) // 获取y
+            el.style.display = ''
+            el.style.webkitTransform = 'translateY(' + y + 'px)' // translateY
+            el.style.transform = 'translateY(' + y + 'px)'
+            let inner = el.getElementsByClassName('inner-hook')[0]
+            inner.style.webkitTransform = 'translateX(' + x + 'px)'
+            inner.style.transform = 'translateX(' + x + 'px)'
+          }
+      }
+    },
+    dropping (el, done) { // 重置小球数量  样式重置
+      /* eslint-disable no-unused-vars */
+      let rf = el.offsetHeight
+      el.style.webkitTransform = 'translate3d(0,0,0)'
+      el.style.transform = 'translate3d(0,0,0)'
+      let inner = el.getElementsByClassName('inner-hook')[0]
+      inner.style.webkitTransform = 'translate3d(0,0,0)'
+      inner.style.transform = 'translate3d(0,0,0)'
+      el.addEventListener('transitionend', done)
+    },
+    afterDrop (el) { // 初始化小球
+      let ball = this.dropBalls.shift()
+      if (ball) {
+        ball.show = false
+        el.style.display = 'none'
+      }
+    }
+  },
+  watch: {
+    selectedFoods (newFoods, oldFoods) {
+      if (newFoods.length === 0) {
+        this.fold = true
+      }
     }
   }
 }
 </script>
 <style lang='stylus' scoped>
 @import '../../common/stylus/icon.css'
-
   .shopcart
     position fixed
     left 0
@@ -244,17 +289,31 @@ export default {
             background #00b43c
             color #fff
     .ball-container
-      .ball
-        position fixed
-        left 32px
-        bottom 22px
-        z-index 200
-        &.drop-transition
-          transition all 0.4s cubic-bezier(0.49,-0.29,0.75,0.41)
-          .inner
-            width 16px
-            height 16px
-            border-radius 50%
-            background rgb(0,162,220)
-            transition all 0.4s linear
+     position: fixed
+     top: 300px
+     left: 40px
+    .ball
+      position: fixed
+      left: 32px
+      bottom: 22px
+      z-index: 200
+      transition: all 0.4s cubic-bezier(0.49, -0.29, 0.75, 0.41)
+      .inner
+        width: 16px
+        height: 16px
+        border-radius: 50%
+        background-color: rgb(0,160,220)
+        transition: all 0.4s linear
+    .showcart-list
+      position absolute
+      top 0
+      left 0
+      z-index -1
+      width 100%
+      transition all 0.5s
+      transform translate3d(0,-100%,0)
+      &.fold-enter,&.fold-leave
+        transition all 0.5s
+        transform translate3d(0,0,0)
+    
 </style>

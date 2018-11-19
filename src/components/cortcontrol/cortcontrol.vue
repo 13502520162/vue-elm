@@ -11,7 +11,7 @@
 <script>
 import Vue from 'vue'
 export default {
-  name: 'default',
+  name: 'cortcontrol',
   data () {
     return {
     }
