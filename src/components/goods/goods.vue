@@ -15,14 +15,14 @@
       <li v-for="(items,index) of goods" class="food-list food-list-hook" :key='index'>
         <h1 class="title">{{items.name}}</h1>
         <ul>
-          <li v-for='(item,index) of items.foods' :key='index' class="food-item border-bottom">
-            <div class="icon">
+          <li  v-for='(item,index) of items.foods' :key='index' class="food-item border-bottom">
+            <div class="icon" @click="selectFood(item,$event)">
               <img width="57" height="57" :src="item.icon" alt="">
             </div>
             <div class="content">
-              <h2 class="name">{{item.name}}</h2>
-              <p class="desc">{{item.description}}</p>
-              <div class="extra">
+              <h2 @click="selectFood(item,$event)" class="name">{{item.name}}</h2>
+              <p @click="selectFood(item,$event)" class="desc">{{item.description}}</p>
+              <div class="extra" @click="selectFood(item,$event)">
                 <span class="count">月售{{item.sellCount}}份</span>
                 <span>好评率{{item.rating}}%</span>
               </div>
@@ -40,6 +40,7 @@
     </ul>
   </div>
   <shopcart  ref="shopcart" :select-foods='selectFoods' :delivery-price='seller.deliveryPrice' :min-price='seller.minPrice'></shopcart>
+  <food @cart-add="cartAdd" :food="selectedFoods" ref="food"></food>
  </div>
 </template>
 
@@ -48,6 +49,7 @@ import axios from 'axios'
 import BScroll from 'better-scroll'
 import shopcart from 'components/shopcart/shopcart'
 import cortcontrol from 'components/cortcontrol/cortcontrol'
+import food from 'components/food/food'
 export default {
   name: 'goods',
   props: {
@@ -57,7 +59,8 @@ export default {
   },
   components: {
     shopcart,
-    cortcontrol
+    cortcontrol,
+    food
   },
   created () {
     this.classMap = ['decrease', 'discount', 'special', 'invoice', 'guarantee']
@@ -69,7 +72,8 @@ export default {
     return {
       goods: [],
       listHeight: [],
-      scrollY: 0
+      scrollY: 0,
+      selectedFoods: {}
     }
   },
   computed: {
@@ -146,6 +150,13 @@ export default {
       this.$nextTick(() => { // 体验优化，异步执行下落动画
         this.$refs.shopcart.drop(el)
       })
+    },
+    selectFood (food, event) {
+      if (!event._constructed) {
+        return
+      }
+      this.selectedFoods = food
+      this.$refs.food.show()
     }
   }
 }
@@ -242,11 +253,11 @@ export default {
             font-weight 700
             line-height 24px
             .now
-              margin-right 18xp
               font-size 14px
+              padding-right 4px
               color rgb(240,20,20)
             .old
-              text-direction line-through
+              text-decoration line-through
               font-size 10px
               color rgb(147,153,159)
           .coracontrol-wraper

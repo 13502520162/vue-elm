@@ -1,55 +1,61 @@
 <template>
-  <div class="shopcart">
-    <div class="content" @click='toggleList'>
-      <div class="content-left">
-        <div class="logo-wrapper">
-          <div class="logo" :class="{'highligh':totalCount>0}">
-            <span class="icon-shopping_cart" :class="{'highligh':totalCount>0}"></span>
+  <div>
+    <div class="shopcart">
+      <div class="content" @click='toggleList'>
+        <div class="content-left">
+          <div class="logo-wrapper">
+            <div class="logo" :class="{'highligh':totalCount>0}">
+              <span class="icon-shopping_cart" :class="{'highligh':totalCount>0}"></span>
+            </div>
+            <div class="num" v-show='totalCount>0'>{{totalCount}}</div>
           </div>
-          <div class="num" v-show='totalCount>0'>{{totalCount}}</div>
+          <div class="price" :class="{'highligh':totalPrice>0}">￥{{totalPrice}}</div>
+          <div class="desc">另需配送费￥{{deliveryPrice}}元</div>
         </div>
-        <div class="price" :class="{'highligh':totalPrice>0}">￥{{totalPrice}}</div>
-        <div class="desc">另需配送费￥{{deliveryPrice}}元</div>
+        <div class="content-right" @click.stop="pay">
+          <div class="pay" :class="payClass">{{payDesc}}</div>
+        </div>
       </div>
-      <div class="content-right">
-        <div class="pay" :class="payClass">{{payDesc}}</div>
+      <div class="ball-container">
+        <div v-for="(ball,index) in balls" :key='index'>
+              <transition name="drop" @before-enter="beforeDrop" @enter="dropping" @after-enter="afterDrop">
+                  <div class="ball" v-show="ball.show">
+                      <div class="inner inner-hook"></div>
+                  </div>
+              </transition>
+          </div>
       </div>
-    </div>
-    <div class="ball-container">
-       <div v-for="(ball,index) in balls" :key='index'>
-            <transition name="drop" @before-enter="beforeDrop" @enter="dropping" @after-enter="afterDrop">
-                <div class="ball" v-show="ball.show">
-                    <div class="inner inner-hook"></div>
+      <transition name='fold'>
+        <div class="showcart-list" v-show='listShow'>
+          <div class="list-header">
+            <h1 class="title">购物车</h1>
+            <span class="empty" @click='empty'>清空</span>
+          </div>
+          <div class="list-content" ref="listContent">
+            <ul>
+              <li class="food  border-bottom" v-for='(food,index) of selectFoods' :key='index'>
+                <span class="name">{{food.name}}</span>
+                <div class="price">
+                  <span>￥{{food.price*food.count}}</span>
                 </div>
-            </transition>
+                <div class="cortcontrol-wrapper">
+                  <cortcontrol :food="food"></cortcontrol>
+                </div>
+              </li>
+            </ul>
+          </div>
         </div>
+      </transition>
     </div>
-    <transition name='fold'>
-      <div class="showcart-list" v-show='listShow'>
-        <div class="list-header">
-          <h1 class="title">购物车</h1>
-          <span class="empty">清空</span>
-        </div>
-        <div class="list-content">
-          <ul>
-            <li class="food" v-for='(food,index) of selectFoods' :key='index'>
-              <span class="name">{{food.name}}</span>
-              <div class="price">
-                <span>￥{{food.price*food.count}}</span>
-              </div>
-              <div class="cortcontrol-wrapper">
-                <cortcontrol :food="food"></cortcontrol>
-              </div>
-            </li>
-          </ul>
-        </div>
-      </div>
+    <transition name="fade">
+       <div class="list-mask" v-show="listShow"></div>
     </transition>
   </div>
 </template>
 
 <script>
 import cortcontrol from 'components/cortcontrol/cortcontrol'
+import BScroll from 'better-scroll'
 export default {
   name: 'default',
   props: {
@@ -105,13 +111,23 @@ export default {
     },
     listShow () {
       if (!this.totalCount) {
-        return false
+          this.fold = true
+          return false
+        }
+        let show = !this.fold
+        if (show) { // 如果显示详情页
+          this.$nextTick(() => { // 数据变化后，DOM并没有立即生效，而BScroll严重依赖于DOM，所以使用nextTick
+            if (!this.scroll) { // 如果实例不存在，新建
+              this.scroll = new BScroll(this.$refs.listContent, {
+                click: true
+              })
+            } else { // 实例存在，直接调用refresh接口
+              this.scroll.refresh()
+            }
+          })
+        }
+        return show
       }
-      if (this.totalCount > 0 && !this.fold) {
-        return true
-      }
-      return false
-    }
   },
   data () {
     return {
@@ -185,6 +201,17 @@ export default {
         ball.show = false
         el.style.display = 'none'
       }
+    },
+    empty () {
+      this.selectFoods.forEach((food) => {
+        food.count = 0
+      })
+    },
+    pay () {
+      if (this.totalPrice < this.minPrice) {
+        return
+      }
+      window.alert(`支付${this.totalPrice}元`)
     }
   },
   watch: {
@@ -310,10 +337,62 @@ export default {
       left 0
       z-index -1
       width 100%
-      transition all 0.5s
+      transition all 0.5s linear
       transform translate3d(0,-100%,0)
-      &.fold-enter,&.fold-leave
-        transition all 0.5s
+      &.fold-enter,&.fold-leave-to
+        transition all 0.5s linear
         transform translate3d(0,0,0)
-    
+      .list-header
+        height  40px
+        line-height 40px
+        padding 0 18px
+        background #f3f5f7
+        border-bottom 1px solid rgba(7,17,27,0.1)
+        .title
+          float left
+          font-size 14px
+          color rgb(7,17,27)
+        .empty
+          float right
+          font-size 12px
+          color rgb(0,160,220)
+      .list-content
+        padding 0 18px
+        max-height 217px
+        background #fff
+        overflow hidden
+        .food
+          position relative
+          padding 12px 0
+          box-sizing border-box
+          .name
+            line-height 24px
+            font-size 14px
+            color rgb(7,17,27)
+          .price
+            position absolute
+            bottom 12px
+            right 90px
+            line-height 24px
+            font-size 14px
+            font-weight 700
+            color rgb(240,20,20)
+          .cortcontrol-wrapper
+            position absolute
+            bottom 6px
+            right 0
+  .list-mask
+    position fixed
+    top 0
+    left 0
+    height 100%
+    width 100%
+    background rgba(7,17,27,.6)
+    opacity 1
+    z-index 40
+    transition all 0.5s
+    backdrop-filter blur(10px)
+    &.fade-enter,&.fade-leave-to
+      opacity 0
+      background rgba(7,17,27,0)
 </style>
